@@ -10,7 +10,7 @@ package com.edzis.osmf.timelineClasses {
 	
 	/**
 	 * Controls the playback of a MovieClip in relation to SEEK and PLAY traits
-	 * Accepts a specific fps that is used to calculate duration and maintain playback synchronization
+	 * Accepts a specific frameRate that is used to calculate duration and maintain playback synchronization
 	 */
 	public class TimelineMediator extends EventDispatcher {
 		
@@ -19,15 +19,15 @@ package com.edzis.osmf.timelineClasses {
 		public var playTrait		:PlayTrait;
 		
 		private var mc				:MovieClip;
-		private var fps				:Number;
+		private var frameRate				:Number;
 		private var targetTime		:Number = 0;
 		private var startTimestamp	:Number;
 
 		
-		public function TimelineMediator(mc:MovieClip, fps:Number = 30) {
+		public function TimelineMediator(mc:MovieClip, frameRate:Number = 30) {
 			this.mc = mc;
-			this.fps = fps;
-			duration = mc.totalFrames/fps;
+			this.frameRate = frameRate;
+			duration = mc.totalFrames/frameRate;
 		}
 		
 		/**
@@ -52,13 +52,13 @@ package com.edzis.osmf.timelineClasses {
 			// ignore seek value in case of looping, rely instead on targetTime value calculated when reaching the end
 			// this is needed because maybe some frames must be skipped at the end and begining to sustain smooth looping
 			if(currentTime == duration && time == 0 && playTrait.playState == PlayState.PLAYING) {
-				render(targetTime);
+				renderTime(targetTime);
 				mc.addEventListener(Event.ENTER_FRAME, updateTime);
 				return;
 			}
 				
 			targetTime = time;
-			render(targetTime);
+			renderTime(targetTime);
 			
 			// if playing, must also update startTimestamp to make preceeding frames correct
 			if(playTrait.playState == PlayState.PLAYING)
@@ -74,20 +74,21 @@ package com.edzis.osmf.timelineClasses {
 			targetTime = getTimer()/1000 - startTimestamp;
 			if(targetTime >= duration){// reached the end
 				// mentally roll one loop forward:
-				startTimestamp += duration; // the first frame was rendered one frame later
-				targetTime -= duration; // the distance from first frame is oneloop shorter
-				render(duration); // go to the end of visuals and currentTime value, in case no looping happens
+				startTimestamp += duration; // as if the first frame was rendered one loop later
+				targetTime -= duration; // as if the distance from first frame is one loop shorter
+				
+				renderTime(duration); // go to the end of visuals and currentTime value, in case no looping happens
 				signalComplete(); // signal that the end was reached
 			} else
-				render(targetTime);
+				renderTime(targetTime);
 		}
 		
 		/**
 		 * Finds the corresponding frame for a particular time value and goes to it
 		 */
-		private function render(time:Number):void {
+		private function renderTime(time:Number):void {
 			currentTime = time;
-			var newFrame:uint = Math.floor(fps * time) + 1;
+			var newFrame:uint = Math.floor(frameRate * time) + 1;
 			if(mc.currentFrame != newFrame)
 				mc.gotoAndStop(newFrame);
 		}

@@ -11,8 +11,8 @@ package com.edzis.osmf.timelineClasses
 	
 	/**
 	 * Extends SWFElement to be more like videos - adds TIME, SEEK and PLAY traits
-	 * Also accepts a specific fps in the form of resource metadata that is used when advancing the playhead and determining duration
-	 * 	resource.addMetadataValue("fps", 24);
+	 * Also accepts a specific frameRate in the form of resource metadata that is used when advancing the playhead and determining duration
+	 * 	resource.addMetadataValue("frameRate", 24);
 	 */
 	public class SwfTimeline extends SWFElement
 	{
@@ -61,9 +61,9 @@ package com.edzis.osmf.timelineClasses
 		 * However the real control is executed by TimelineMediator that reacts to changes in traits
 		 */
 		private function addTraits():void {
-			var fps:Number = resource.getMetadataValue("fps") as Number;
+			var frameRate:Number = resource.getMetadataValue("frameRate") as Number;
 			
-			timelineMediator = new TimelineMediator(timeline, fps);
+			timelineMediator = new TimelineMediator(timeline, frameRate);
 			
 			var timeTrait:TimelineTimeTrait = new TimelineTimeTrait(timelineMediator.duration, timelineMediator);
 			var seekTrait:TimelineSeekTrait = new TimelineSeekTrait(timeTrait, timelineMediator);

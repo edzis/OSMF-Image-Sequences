@@ -20,13 +20,18 @@ package {
 
 		private var btns:Sprite;
 		private var scrollBar:HSlider;
-		private var fpsSlider:HUISlider;
+		private var frameRateSlider:HUISlider;
 		private var lastSeekRatio:Number;
 		
 		public function SwfTimelineExample()
 		{
 			stage.scaleMode = "noScale";
 			stage.align = "lt";
+			
+			// workaround for a relative path to work online
+			var swfURL:String = this.loaderInfo.url;
+			swfURL = swfURL.substr(0, swfURL.lastIndexOf("/") + 1);
+			url = swfURL + url;
 			
 			
 		//	PLAYER
@@ -57,13 +62,13 @@ package {
 			scrollBar.value = 0;
 			scrollBar.width = 280;
 			
-			fpsSlider = new HUISlider(btns, 0, 25, "FPS", resetMedia);
-			fpsSlider.minimum = 1;
-			fpsSlider.maximum = 150;
-			fpsSlider.value = 30;
-			fpsSlider.tick = 1;
-			fpsSlider.width = 300;
-			fpsSlider.labelPrecision = 0;
+			frameRateSlider = new HUISlider(btns, 0, 25, "FRAMERATE", resetMedia);
+			frameRateSlider.minimum = 1;
+			frameRateSlider.maximum = 150;
+			frameRateSlider.value = 30;
+			frameRateSlider.tick = 1;
+			frameRateSlider.width = 300;
+			frameRateSlider.labelPrecision = 0;
 			resetMedia();
 			
 			
@@ -78,7 +83,7 @@ package {
 			if(mediaPlayer.duration > 0)
 				lastSeekRatio = mediaPlayer.currentTime / mediaPlayer.duration;
 			var resource:URLResource = new URLResource(url);
-			resource.addMetadataValue("fps", fpsSlider.value);
+			resource.addMetadataValue("frameRate", frameRateSlider.value);
 			media = new SwfTimeline(resource);
 		}
 		
@@ -106,7 +111,7 @@ package {
 			height = stage.stageHeight - 60;
 			btns.y = stage.stageHeight - 50;
 			scrollBar.width = stage.stageWidth - scrollBar.x - 20;
-			fpsSlider.x = stage.stageWidth - fpsSlider.width - 20 + 35;
+			frameRateSlider.x = stage.stageWidth - frameRateSlider.width - 20 + 35;
 		}
 		
 		protected function updateTime(event:TimeEvent):void {
