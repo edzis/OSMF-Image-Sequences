@@ -14,7 +14,7 @@ package com.edzis.osmf.timelineClasses
 	 * Also accepts a specific frameRate in the form of resource metadata that is used when advancing the playhead and determining duration
 	 * 	resource.addMetadataValue("frameRate", 24);
 	 */
-	public class SwfTimeline extends SWFElement
+	public class SwfTimeline extends SWFElement implements ITimeline
 	{
 		private var timeline			:MovieClip;
 		private var timelineMediator	:TimelineMediator;
@@ -63,7 +63,7 @@ package com.edzis.osmf.timelineClasses
 		private function addTraits():void {
 			var frameRate:Number = resource.getMetadataValue("frameRate") as Number;
 			
-			timelineMediator = new TimelineMediator(timeline, frameRate);
+			timelineMediator = new TimelineMediator(this, frameRate);
 			
 			var timeTrait:TimelineTimeTrait = new TimelineTimeTrait(timelineMediator.duration, timelineMediator);
 			var seekTrait:TimelineSeekTrait = new TimelineSeekTrait(timeTrait, timelineMediator);
@@ -74,6 +74,20 @@ package com.edzis.osmf.timelineClasses
 			addTrait(MediaTraitType.TIME, timeTrait);
 			addTrait(MediaTraitType.SEEK, seekTrait);
 			addTrait(MediaTraitType.PLAY, playTrait);
+		}
+		
+		
+		
+		public function get frameIndex():int {
+			return timeline.currentFrame-1;;
+		}
+		
+		public function get frameCount():int {
+			return timeline.totalFrames;
+		}
+		
+		public function renderFrame(frameIndex:uint):void {
+			timeline.gotoAndStop(frameIndex+1);
 		}
 
 

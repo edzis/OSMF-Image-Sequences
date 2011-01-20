@@ -1,5 +1,6 @@
 package com.edzis.osmf.timelineClasses {
 	import flash.display.MovieClip;
+	import flash.display.Shape;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.utils.getTimer;
@@ -8,6 +9,7 @@ package com.edzis.osmf.timelineClasses {
 	import org.osmf.traits.PlayState;
 	import org.osmf.traits.PlayTrait;
 	
+	[ExcludeClass]
 	/**
 	 * Controls the playback of a MovieClip in relation to SEEK and PLAY traits
 	 * Accepts a specific frameRate that is used to calculate duration and maintain playback synchronization
@@ -18,16 +20,17 @@ package com.edzis.osmf.timelineClasses {
 		public var duration			:Number;
 		public var playTrait		:PlayTrait;
 		
-		private var mc				:MovieClip;
-		private var frameRate				:Number;
+		private var mc				:ITimeline;
+		private var frameRate		:Number;
 		private var targetTime		:Number = 0;
 		private var startTimestamp	:Number;
+		private var ticker			:Shape = new Shape();
 
 		
-		public function TimelineMediator(mc:MovieClip, frameRate:Number = 30) {
+		public function TimelineMediator(mc:ITimeline, frameRate:Number = 30) {
 			this.mc = mc;
 			this.frameRate = frameRate;
-			duration = mc.totalFrames/frameRate;
+			duration = mc.frameCount/frameRate;
 		}
 		
 		/**
@@ -35,14 +38,14 @@ package com.edzis.osmf.timelineClasses {
 		 */
 		public function startPlayback():void {
 			startTimestamp = getTimer()/1000 - targetTime;
-			mc.addEventListener(Event.ENTER_FRAME, updateTime);
+			startTick();
 		}
 		
 		/**
 		 * Opens up a way for PLAY trait to stop playing
 		 */
 		public function stopPlayback():void {
-			mc.removeEventListener(Event.ENTER_FRAME, updateTime)
+			stopTick();
 		}
 		
 		/**
@@ -53,7 +56,7 @@ package com.edzis.osmf.timelineClasses {
 			// this is needed because maybe some frames must be skipped at the end and begining to sustain smooth looping
 			if(currentTime == duration && time == 0 && playTrait.playState == PlayState.PLAYING) {
 				renderTime(targetTime);
-				mc.addEventListener(Event.ENTER_FRAME, updateTime);
+				startTick();
 				return;
 			}
 				
@@ -63,6 +66,14 @@ package com.edzis.osmf.timelineClasses {
 			// if playing, must also update startTimestamp to make preceeding frames correct
 			if(playTrait.playState == PlayState.PLAYING)
 				startTimestamp = getTimer()/1000 - currentTime;
+		}
+		
+		private function startTick():void {
+			ticker.addEventListener(Event.ENTER_FRAME, updateTime);
+		}
+		
+		private function stopTick():void {
+			ticker.removeEventListener(Event.ENTER_FRAME, updateTime);
 		}
 		
 		
@@ -88,9 +99,11 @@ package com.edzis.osmf.timelineClasses {
 		 */
 		private function renderTime(time:Number):void {
 			currentTime = time;
-			var newFrame:uint = Math.floor(frameRate * time) + 1;
-			if(mc.currentFrame != newFrame)
-				mc.gotoAndStop(newFrame);
+			var newFrame:uint = Math.floor(frameRate * time);
+			if(newFrame == mc.frameCount)
+				newFrame-=1;
+			if(mc.frameIndex != newFrame)
+				mc.renderFrame(newFrame);
 		}
 		
 		/**
