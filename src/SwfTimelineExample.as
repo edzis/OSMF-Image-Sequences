@@ -7,7 +7,9 @@ package {
 	import com.edzis.osmf.timelineClasses.SwfTimeline;
 	
 	import flash.display.Sprite;
+	import flash.events.ErrorEvent;
 	import flash.events.Event;
+	import flash.events.UncaughtErrorEvent;
 	
 	import org.osmf.elements.SWFLoader;
 	import org.osmf.events.MediaPlayerCapabilityChangeEvent;
@@ -39,9 +41,12 @@ package {
 		{
 			stage.scaleMode = "noScale";
 			stage.align = "lt";
+			loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, uncaughtErrorHandler);
+			
 			
 			// workaround for a relative path to work online
 			var rootUrl:String = this.loaderInfo.url;
+			rootUrl = "http://www.edzis.com/projects/imageTimelines/";
 			rootUrl = rootUrl.substr(0, rootUrl.lastIndexOf("/") + 1);
 			for (var i:int = 0; i < content.length; i++) {
 				content[i].url = rootUrl + content[i].url;
@@ -170,6 +175,28 @@ package {
 			scrollBar.maximum = mediaPlayer.duration;
 			scrollBar.value = mediaPlayer.currentTime;
 		}
+		
+		private function uncaughtErrorHandler(event:UncaughtErrorEvent):void
+		{
+			if (event.error is Error)
+			{
+				var error:Error = event.error as Error;
+				trace("error", error);
+				// do something with the error
+			}
+			else if (event.error is ErrorEvent)
+			{
+				var errorEvent:ErrorEvent = event.error as ErrorEvent;
+				// do something with the error
+				trace("event", errorEvent);
+			}
+			else
+			{
+				// a non-Error, non-ErrorEvent type was thrown and uncaught
+				trace("uncaughtErrorHandler");
+			}
+		}
+		
 		
 	}
 }

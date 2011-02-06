@@ -2,18 +2,24 @@ package com.edzis.osmf.timelineClasses {
 	import org.osmf.elements.ImageElement;
 	import org.osmf.elements.ImageLoader;
 	import org.osmf.elements.ProxyElement;
+	import org.osmf.events.MediaElementEvent;
+	import org.osmf.media.MediaElement;
 	import org.osmf.media.MediaResourceBase;
 	import org.osmf.media.URLResource;
+	import org.osmf.traits.DisplayObjectTrait;
 	import org.osmf.traits.LoadState;
 	import org.osmf.traits.LoadTrait;
 	import org.osmf.traits.MediaTraitType;
 	
-	public class ImageTimeline extends ProxyElement implements ITimeline
+	public class ImageTimeline extends MediaElement implements ITimeline
 	{
 		private var frames				:Vector.<ImageElement> = new Vector.<ImageElement>();
 		private var timelineMediator	:TimelineMediator;
 		private var frame				:int;
 		private var urlResource			:URLResource;
+
+		private var currentImage		:ImageElement;
+		private var displayTrait		:TimelineDisplayTrait;
 		
 		public function ImageTimeline(resource:URLResource=null) {
 			super();
@@ -51,7 +57,7 @@ package com.edzis.osmf.timelineClasses {
 			buildContent(urlResource.url);
 			if(frames.length > 1)
 				addTraits();
-			proxiedElement = frames[0];
+			currentImage = frames[0];
 		}
 		
 		override public function get resource():MediaResourceBase {
@@ -111,15 +117,47 @@ package com.edzis.osmf.timelineClasses {
 		}
 		
 		public function renderFrame(frameIndex:uint):void {
-			if(proxiedElement == frames[frameIndex])
+			if(currentImage == frames[frameIndex])
 				return;
 			frame = frameIndex;
-			proxiedElement = frames[frameIndex];
 			
-			//	LOAD
-			var loadTrait:LoadTrait = proxiedElement.getTrait(MediaTraitType.LOAD) as LoadTrait;
-			if(loadTrait.loadState != LoadState.LOADING && loadTrait.loadState != LoadState.READY)
+			// OLD ELEMENT
+			if(currentImage)
+				currentImage.removeEventListener(MediaElementEvent.TRAIT_ADD, onTraitAdded);
+			
+			
+			//	NEW ELEMENT
+			currentImage = frames[frameIndex];
+			currentImage.addEventListener(MediaElementEvent.TRAIT_ADD, onTraitAdded);
+			addCurrentImage();
+			var loadTrait:LoadTrait = currentImage.getTrait(MediaTraitType.LOAD) as LoadTrait;
+			if(loadTrait.loadState == LoadState.UNINITIALIZED)
 				loadTrait.load();
 		}
+		
+		/**
+		 * Checks if currentImage has received a new DisplatObjectTrait, to be used for 
+		 */
+		private function onTraitAdded(event:MediaElementEvent):void {
+			if(event.traitType == MediaTraitType.DISPLAY_OBJECT && event.target == currentImage)
+				addCurrentImage();
+		}
+		
+		/**
+		 * Sets the new displayObject. Called only when the currentImages has finished loading and has receivet it's own DisplatObjectTrait
+		 */
+		private function addCurrentImage():void {
+			var currentDisplayTrait:DisplayObjectTrait = currentImage.getTrait(MediaTraitType.DISPLAY_OBJECT) as DisplayObjectTrait;
+			if(!currentDisplayTrait)
+				return;
+			
+			if(!displayTrait){
+				displayTrait = new TimelineDisplayTrait(currentDisplayTrait.displayObject, currentDisplayTrait.mediaWidth, currentDisplayTrait.mediaHeight);
+				addTrait(MediaTraitType.DISPLAY_OBJECT, displayTrait);
+			} else
+				displayTrait.displayObject = currentDisplayTrait.displayObject;
+			
+		}
+		
 	}
 }
