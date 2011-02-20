@@ -14,12 +14,16 @@ package com.edzis.osmf.timelineClasses {
 	public class ImageTimeline extends MediaElement implements ITimeline
 	{
 		private var frames				:Vector.<ImageElement> = new Vector.<ImageElement>();
+		private var _frameCount			:uint;
+		private var _frameCountHalf		:Number;
 		private var timelineMediator	:TimelineMediator;
-		private var frame				:int;
+		private var targetFrame			:uint;
+		private var visibleFrame		:uint = int.MAX_VALUE;
 		private var urlResource			:URLResource;
 
 		private var currentImage		:ImageElement;
 		private var displayTrait		:TimelineDisplayTrait;
+
 		
 		public function ImageTimeline(resource:URLResource=null) {
 			super();
@@ -84,6 +88,8 @@ package com.edzis.osmf.timelineClasses {
 				url += frameIndexString + urlExtension;
 				frames[i] = new ImageElement(new URLResource(url));
 			};
+			_frameCount = frames.length;
+			_frameCountHalf = _frameCount/2;
 		}
 		
 		/**
@@ -108,55 +114,74 @@ package com.edzis.osmf.timelineClasses {
 		}
 		
 		
-		public function get frameIndex():int {
-			return frame;
+		public function get frameIndex():uint {
+			return targetFrame;
 		}
 		
-		public function get frameCount():int {
-			return frames.length;
+		public function get frameCount():uint {
+			return _frameCount;
 		}
 		
 		public function renderFrame(frameIndex:uint):void {
 			if(currentImage == frames[frameIndex])
 				return;
-			frame = frameIndex;
+			targetFrame = frameIndex;
 			
-			// OLD ELEMENT
-			if(currentImage)
-				currentImage.removeEventListener(MediaElementEvent.TRAIT_ADD, onTraitAdded);
+			currentImage = frames[targetFrame];
+			currentImage.addEventListener(MediaElementEvent.TRAIT_ADD, onNewImageReady);
+			showNewImage(currentImage, targetFrame);
 			
-			
-			//	NEW ELEMENT
-			currentImage = frames[frameIndex];
-			currentImage.addEventListener(MediaElementEvent.TRAIT_ADD, onTraitAdded);
-			addCurrentImage();
 			var loadTrait:LoadTrait = currentImage.getTrait(MediaTraitType.LOAD) as LoadTrait;
 			if(loadTrait.loadState == LoadState.UNINITIALIZED)
 				loadTrait.load();
 		}
 		
 		/**
-		 * Checks if currentImage has received a new DisplatObjectTrait, to be used for 
+		 * Evaluates if a newly available image should be shown.
+		 * It is shown if it is closer to target than the currently visible image
+		 * An image has received a new DisplatObjectTrait - is ready to be displayed
 		 */
-		private function onTraitAdded(event:MediaElementEvent):void {
-			if(event.traitType == MediaTraitType.DISPLAY_OBJECT && event.target == currentImage)
-				addCurrentImage();
+		private function onNewImageReady(event:MediaElementEvent):void {
+			if(event.traitType != MediaTraitType.DISPLAY_OBJECT)
+				return;
+			if(visibleFrame == frameIndex)
+				return;
+			
+			var newImage:ImageElement = event.target as ImageElement;
+			var newFrame:int = frames.indexOf(newImage);
+			if(frameOffset(newFrame) < frameOffset(visibleFrame))
+				showNewImage(newImage, newFrame);
 		}
 		
 		/**
-		 * Sets the new displayObject. Called only when the currentImages has finished loading and has receivet it's own DisplatObjectTrait
+		 * Adds a new image to the display.
+		 * Checks if this image is really available for display.
 		 */
-		private function addCurrentImage():void {
-			var currentDisplayTrait:DisplayObjectTrait = currentImage.getTrait(MediaTraitType.DISPLAY_OBJECT) as DisplayObjectTrait;
+		private function showNewImage(newImage:ImageElement, newFrameIndex:uint ):void {
+			var currentDisplayTrait:DisplayObjectTrait = newImage.getTrait(MediaTraitType.DISPLAY_OBJECT) as DisplayObjectTrait;
 			if(!currentDisplayTrait)
 				return;
 			
+			newImage.removeEventListener(MediaElementEvent.TRAIT_ADD, onNewImageReady);
+			visibleFrame = newFrameIndex;
 			if(!displayTrait){
 				displayTrait = new TimelineDisplayTrait(currentDisplayTrait.displayObject, currentDisplayTrait.mediaWidth, currentDisplayTrait.mediaHeight);
 				addTrait(MediaTraitType.DISPLAY_OBJECT, displayTrait);
 			} else
 				displayTrait.displayObject = currentDisplayTrait.displayObject;
 			
+		}
+		
+		/**
+		 * Calculates the distance from a given frame to the target frame
+		 */
+		private function frameOffset(frame:uint):uint {
+			var dist:int = frame - targetFrame;
+			if(dist > _frameCountHalf)
+				return dist - Math.ceil(_frameCountHalf);
+			else if(dist < -_frameCountHalf)
+				return dist + frameCount;
+			return Math.abs(dist);
 		}
 		
 	}

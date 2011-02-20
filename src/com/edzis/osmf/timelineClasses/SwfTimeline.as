@@ -78,11 +78,11 @@ package com.edzis.osmf.timelineClasses
 		
 		
 		
-		public function get frameIndex():int {
+		public function get frameIndex():uint {
 			return timeline.currentFrame-1;;
 		}
 		
-		public function get frameCount():int {
+		public function get frameCount():uint {
 			return timeline.totalFrames;
 		}
 		
